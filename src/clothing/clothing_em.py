@@ -8,6 +8,7 @@ description:
 import sys
 import random
 import glob
+import numpy as np
 import cv2
 
 IMG_WIDTH = 299
@@ -28,10 +29,17 @@ class ClothingEM():
     def crop_to_person(self):
         pass
 
-    def create_histogramss(self, img, line_height):
+    def create_histograms(self, img, line_height):
         # Crop image so that only the person is in the image:
+        mask_upper = np.zeros(img.shape[:2], np.uint8)
+        mask_upper[line_height:img.shape[1], 0:img.shape[0]] = 255
+        masked_img1 = cv2.bitwise_and(img, img, mask = mask)
 
-        cv2.calcHist()
+        mask_lower = np.zeros(img.shape[:2], np.uint8)
+        mask_lower[0:line_height, 0:img.shape[1]] = 255
+        masked_img1 = cv2.bitwise_and(img, img, mask = mask)
+        h1 = cv2.calcHist([img], [3], mask_upper)
+        h2 = cv2.calcHist([img], [3], mask_lower)
 
         return h1, h2
 
