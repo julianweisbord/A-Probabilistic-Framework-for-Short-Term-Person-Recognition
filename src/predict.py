@@ -50,7 +50,7 @@ def main():
         # Get live image/vid data
     live_imgs = LoadData(DEFAULT_LIVE_IMG_PATH, (IMAGE_WIDTH, IMAGE_HEIGHT))
     live_frame_dataset = live_imgs.get_last_n_frames(n=1)
-    # Get the initial photos of individuals
+    # Get the initial photos, labels, and location of individuals
     initial_people = LoadData(DEFAULT_INDIVIDUAL_IMG_PATH)
     person_dataset = initial_people.get_all_frames()
 

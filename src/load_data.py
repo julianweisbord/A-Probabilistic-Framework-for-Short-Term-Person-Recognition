@@ -46,7 +46,8 @@ class LoadData():
         pass
 
     def set_all_frames(self):
-
+        '''
+        '''
         img_names = []  # img file base path, the png file
         images = []
         files = glob.glob(self.frame_path + '*')
@@ -59,6 +60,7 @@ class LoadData():
 
             # Locate where the person is in the image
             self.person_location.append(locate(image))
+            location = self.person_location
 
             flbase = os.path.basename(img)  # base path of image
             img_names.append(flbase)
