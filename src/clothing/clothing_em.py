@@ -43,6 +43,7 @@ class ClothingEM():
             l = cv2.imshow('image', img)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
+            print("img shape: ", img.shape)
         # Crop image so that only the person is in the image:
         mask_upper = np.zeros(img.shape[:2], np.uint8)
         # mask_upper[<heihgt>, <width>]
@@ -53,40 +54,33 @@ class ClothingEM():
         mask_lower[0:line_height, 0:img.shape[1]] = 255
         lower_masked_img = cv2.bitwise_and(img, img, mask = mask_lower)
         if VERBOSITY >=2:
-            plt.subplot(223), plt.imshow(upper_masked_img, 'gray')
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
-            # plt.subplot(224), plt.imshow(lower_masked_img, 'gray')
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows()
+            upper_plot = plt.subplot(221)
+            upper_plot.set_title("Upper Mask")
+            upper_plot.imshow(upper_masked_img)
 
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        # cv2.imshow("gray", gray)
-        # cv2.waitKey(0)
-        h1 = cv2.calcHist([gray], [0], None, [256], [0, 256])
-        h1_mask = cv2.calcHist([gray], [0], None, [256], [0, 256])
-        h2 = cv2.calcHist([gray], [0], None, [256], [0, 256])
-        # plt.subplot(224), plt.plot(h1), plt.plot(h1_mask)
-        # plt.xlim([0, 256])
-        plt.hist(img.ravel(),256,[0,256]); plt.show()
-        # plt.show()
-        # plt.figure()
-        # plt.title("Grayscale Histogram")
-        # plt.xlabel("Bins")
-        # plt.ylabel("# of Pixels")
-        # plt.plot(h1)
-        # plt.show()
-        # plt.xlim([0, 256])
-        # chans = cv2.split(img)
-        # colors = ("b", "g", "r")
-        # features_h1 = []
-        # features_h2 = []
-        # plt.figure()
-        # for (chan, color) in zip(chans, colors):
-        #     h1 = cv2.calcHist([chan], [0], mask_upper, [256], [0, 256])
-        #     h2 = cv2.calcHist([chan], [0], mask_lower, [256], [0, 256])
-        #     features_h1.extend(h1)
-        #     features_h2.extend(h2)
+            lower_plot = plt.subplot(222)
+            lower_plot.set_title("Lower Mask")
+            lower_plot.imshow(lower_masked_img)
+
+
+        colors = ("b", "g", "r")
+        features_h1 = []
+        features_h2 = []
+        for i,col in enumerate(colors):
+            h1 = cv2.calcHist([img], [i], None, [256], [0, 1])
+            h2 = cv2.calcHist([img], [i], mask_lower, [256], [0, 1])
+            features_h1.extend(h1)
+            features_h2.extend(h2)
+            h1_plot = plt.subplot(223)
+            h1_plot.set_title("Histogram With Upper Mask")
+            h1_plot.plot(h1, color = col)
+            plt.xlim([0, 256])
+            h2_plot = plt.subplot(224)
+            h2_plot.set_title("Histogram With Lower Mask")
+            h2_plot.plot(h2, color = col)
+            plt.xlim([0, 256])
+        plt.show()
+        print("Flattened feature vector", np.array(features_h1).flatten().shape)
         return h1, h2
 
     def kmeans(self):
@@ -106,7 +100,7 @@ class ClothingEM():
             # and Histogram 2 (H2) is below. One histogram will likely contain data that
             # isn't like the rest of its data and is more like the other histogram data,
             # so the line must be moved
-        h1, h2 = self.create_histograms(random_line_img, rand_y)
+        h1, h2 = self.create_histograms(img, rand_y)
 
 		# 2: Reclassify Points, P(p | H1), P(p | H2) then relabel points
             # Compare 2 histograms and see which color seems like it should belong to
