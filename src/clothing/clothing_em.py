@@ -36,48 +36,66 @@ class ClothingEM():
             self.person_locations.append(dataset[0])
 
     def crop_to_person(self):
-        pass
+        # Simulate this function for now with constant values
+        x1 = 89
+        x2 = 198
+        y1 = 0
+        y2 = 284
+        return x1, x2, y1, y2
 
     def create_histograms(self, img, line_height):
         if VERBOSITY >=2:
-            l = cv2.imshow('image', img)
+            l = cv2.imshow('Random Line Splitting Clothing', img)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
             print("img shape: ", img.shape)
         # Crop image so that only the person is in the image:
-        mask_upper = np.zeros(img.shape[:2], np.uint8)
-        # mask_upper[<heihgt>, <width>]
-        mask_upper[line_height:img.shape[1], 0:img.shape[0]] = 255
-        upper_masked_img = cv2.bitwise_and(img, img, mask=mask_upper)
+        x1, x2, y1, y2 = self.crop_to_person()
 
-        mask_lower = np.zeros(img.shape[:2], np.uint8)
-        mask_lower[0:line_height, 0:img.shape[1]] = 255
-        lower_masked_img = cv2.bitwise_and(img, img, mask = mask_lower)
+        mask_upper_cropped = np.zeros(img.shape[:2], np.uint8)
+        mask_upper_cropped[y1:line_height, x1:x2] = 255
+        upper_masked_img_cropped = cv2.bitwise_and(img, img, mask=mask_upper_cropped)
+
+        # mask_upper = np.zeros(img.shape[:2], np.uint8)
+        # # mask_upper[<height>, <width>]
+        # mask_upper[line_height:img.shape[1], 0:img.shape[0]] = 255
+        # upper_masked_img = cv2.bitwise_and(img, img, mask=mask_upper)
+
+        # mask_lower = np.zeros(img.shape[:2], np.uint8)
+        # mask_lower[0:line_height, 0:img.shape[1]] = 255
+        # lower_masked_img = cv2.bitwise_and(img, img, mask = mask_lower)
+
+        mask_lower_cropped = np.zeros(img.shape[:2], np.uint8)
+        mask_lower_cropped[line_height:y2, x1:x2] = 255
+        lower_masked_img_cropped = cv2.bitwise_and(img, img, mask=mask_lower_cropped)
+
+
+
+        # Create upper and lower histograms and plot them
+        plt.figure("Color Histograms")
+        upper_plot = plt.subplot(221)
+        upper_plot.set_title("Above Theta Line")
+        lower_plot = plt.subplot(222)
+        lower_plot.set_title("Below Theta Line")
         if VERBOSITY >=2:
-            upper_plot = plt.subplot(221)
-            upper_plot.set_title("Upper Mask")
-            upper_plot.imshow(upper_masked_img)
-
-            lower_plot = plt.subplot(222)
-            lower_plot.set_title("Lower Mask")
-            lower_plot.imshow(lower_masked_img)
-
+            upper_plot.imshow(upper_masked_img_cropped)
+            lower_plot.imshow(lower_masked_img_cropped)
 
         colors = ("b", "g", "r")
         features_h1 = []
         features_h2 = []
         for i,col in enumerate(colors):
-            h1 = cv2.calcHist([img], [i], None, [256], [0, 1])
-            h2 = cv2.calcHist([img], [i], mask_lower, [256], [0, 1])
+            h1 = cv2.calcHist([img], [i], mask_upper_cropped, [256], [0, 1])
+            h2 = cv2.calcHist([img], [i], mask_lower_cropped, [256], [0, 1])
             features_h1.extend(h1)
             features_h2.extend(h2)
             h1_plot = plt.subplot(223)
-            h1_plot.set_title("Histogram With Upper Mask")
-            h1_plot.plot(h1, color = col)
+            h1_plot.set_title("Histogram Above Theta Line")
+            h1_plot.plot(h1, color=col)
             plt.xlim([0, 256])
             h2_plot = plt.subplot(224)
-            h2_plot.set_title("Histogram With Lower Mask")
-            h2_plot.plot(h2, color = col)
+            h2_plot.set_title("Histogram Below Theta Line")
+            h2_plot.plot(h2, color=col)
             plt.xlim([0, 256])
         plt.show()
         print("Flattened feature vector", np.array(features_h1).flatten().shape)
@@ -92,9 +110,13 @@ class ClothingEM():
     def color_em(self, img):
         # 0: Generate a random horizontal line (theta), classify points below and above it.
         rand_y = random.randint(1, IMG_HEIGHT + 1)
+
         random_line_img = cv2.line(img, (0, rand_y), (IMG_WIDTH, rand_y), (0, 0, 250), 4)
-        # cv2.imshow('Image with random line', random_line)
-        # cv2.imwrite('../../data_capture/manipulated_images/im', random_line_img)
+
+        # Save random line image
+        random_line_img_out = np.multiply(random_line_img, 255.0)
+        random_line_img_out = random_line_img_out.astype('uint8')
+        cv2.imwrite('../../data_capture/manipulated_images/line.jpeg', random_line_img_out)
 
         # 1: Build color histograms, Histogram1 (H1) is above the theta line,
             # and Histogram 2 (H2) is below. One histogram will likely contain data that
