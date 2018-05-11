@@ -17,8 +17,8 @@ Steps: (0 - 2 are E&M in Color Space)
 		}
 
 P(Individual | Body Type) = {
--Anthropometric Distances for shape-based biometric human identification-Create a skeleton of points and distance vectors between body parts using input images of each person. Create point vectors that clearly show visible inter-joint distances and the euclidean distance should be invariant of most poses.
--Superimpose these points on to a new image.
+&nbsp;&nbsp;&nbsp;&nbsp;-Anthropometric Distances for shape-based biometric human identification-Create a skeleton of points and distance vectors between body parts using input images of each person. Create point vectors that clearly show visible inter-joint distances and the euclidean distance should be invariant of most poses.
+&nbsp;&nbsp;&nbsp;&nbsp;-Superimpose these points on to a new image.
 
 }
 
