@@ -5,23 +5,29 @@ The goal of this project is to take a bare-bones mobile robot running ROS and pr
 
 P(Individual | Data) =  a * P(Individual | Clothing) + b * P(Individual | Body Type)
 
-P(Individual | Clothing) = {
+P(Individual | Clothing):
 
 &nbsp;&nbsp;&nbsp;&nbsp; Steps: (1 - 3 are E&M in Color Space)
+
 &nbsp;&nbsp;&nbsp;&nbsp; 1. Generate a random horizontal line (theta), classify points below and above it.
+
 &nbsp;&nbsp;&nbsp;&nbsp; 2. Build color histograms, Histogram1 (H1) is above the theta line, and Histogram 2 (H2) is below.  One histogram will likely contain data that isn’t like the rest of its data and is more like the other histograms data, so the line must be moved.
+
 &nbsp;&nbsp;&nbsp;&nbsp; 3. Reclassify Points, P(p | H1), P(p | H2) then relabel points
+
 &nbsp;&nbsp;&nbsp;&nbsp; 4. (Physical Space) K-Means step on theta line, mean of the 2 distributions to converge to middle points (probably knees and ribs)
 &nbsp;&nbsp;&nbsp;&nbsp; 5. repeat steps 2 to 4 until convergence
 
-}
 
-P(Individual | Body Type) = {
 
-&nbsp;&nbsp;&nbsp;&nbsp; -Anthropometric Distances for shape-based biometric human identification-Create a skeleton &nbsp;&nbsp;&nbsp;&nbsp; of points and distance vectors between body parts using input images of each person. &nbsp;&nbsp;&nbsp;&nbsp; Create point vectors that clearly show visible inter-joint distances and the euclidean &nbsp;&nbsp;&nbsp;&nbsp; distance should be invariant of most poses.
-&nbsp;&nbsp;&nbsp;&nbsp; -Superimpose these points on to a new image.
+P(Individual | Body Type):
 
-}
+ 1. Anthropometric Distances for shape-based biometric human identification-Create a skeleton
+ of points and distance vectors between body parts using input images of each person. Create point vectors that clearly show visible inter-joint distances and the euclidean distance should be invariant of most poses.
+
+2. Superimpose these points on to a new image.
+
+
 
 ##  Clothing Expectation Maximization On Live Data
 One of the most important steps in classifying humans within our framework is clothing recognition. In a typical office, humans check in with security or do some sort of sign-in at the beginning of the day. We can add to this sign-in process by having a camera take pictures of the approaching worker. In this model, those pictures can be used to train an intelligent agent on what kind of clothing it should expect each individual to be wearing. Once each individual's appearance is documented, the intelligent robot can then recognize and provide assistance to specific humans.
