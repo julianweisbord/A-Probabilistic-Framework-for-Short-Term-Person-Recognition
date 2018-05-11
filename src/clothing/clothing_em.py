@@ -70,7 +70,6 @@ class ClothingEM():
         lower_masked_img_cropped = cv2.bitwise_and(img, img, mask=mask_lower_cropped)
 
 
-
         # Create upper and lower histograms and plot them
         plt.figure("Color Histograms")
         upper_plot = plt.subplot(221)
@@ -106,6 +105,27 @@ class ClothingEM():
         K-means on physical space
         '''
         pass
+        # Take set of points as input x1, ... ,xn
+        # Randomly place k centroids
+        # for each point xi:
+        #   find nearest centroid cj and assign point xi to cj
+        #   The cluster centroid will be generated randomly at a point above or below the
+        #   line where the peak values are.
+        # for each cluster:
+        #   new cluster = position of mean of all points assigned to previous cluster
+
+    def expectation(h1, h2):
+        # Expectation:
+        p_point_h1 = []
+        p_point_h2 = []
+        for each point in h1:
+            norm1 = freq_h1 + freq_h2
+            norm2 = freq_h1 + freq_h2
+            p_point = freq_h1 / (norm1)
+            p_point_h1.append(p_point)
+        for each point in h2:
+            p_point = freq_h2 / (norm2)
+            p_point_h2.append(p_point)
 
     def color_em(self, img):
         # 0: Generate a random horizontal line (theta), classify points below and above it.
@@ -122,7 +142,44 @@ class ClothingEM():
             # and Histogram 2 (H2) is below. One histogram will likely contain data that
             # isn't like the rest of its data and is more like the other histogram data,
             # so the line must be moved
-        h1, h2 = self.create_histograms(img, rand_y)
+        line_pos = rand_y
+        prior_line_pos = 0
+        n = 10 # Arbitrary pixel value for now.
+        while(abs(line_pos - prior_line_pos) > 0):
+            h1, h2 = self.create_histograms(img, rand_y)
+            # Expectation
+            p_point_h1, p_point_h2 = expectation(h1, h2)
+            # Maximization:
+            # avg_point_h shape is: (point_position, frequency, probability)
+            avg_point_h1 = mean(p_point_h1)  # points with the average color value
+            avg_point_h2 = mean(p_point_h2)
+
+            # Ieratively try to increase or decrease line height to make
+                # sure that the new frequency value for the average point
+                # is greater than the prior
+
+            new_avg_color_h1 = 0
+            new_avg_color_h2 = 0
+            count = 0
+            go_down = False
+
+            while(avg_color_h1 > new_avg_color_h1 and avg_color_h2 > new_avg_color_h2):
+                if go_down == True:
+                    line_pos -= n * avg_point_h1_probability
+                else:
+                    # Move line upwards
+                    line_pos += n * avg_point_h1_probability
+                p_point_h1, p_point_h2 = expectation(h1, h2)
+                new_avg_color_h1 = mean(p_point_h1)
+                new_avg_color_h2 = mean(p_point_h2)
+                if(avg_color_h1 > new_avg_color_h1 and avg_color_h2 > new_avg_color_h2):
+                    # line_pos -= n  # If up was the wrong direction
+                    go_down = True
+                # n /= 2
+                # avg_color_h1 = new_avg_color_h1
+                # avg_color_h2 = new_avg_color_h2
+                count += 1
+            prior_line_pos = line_pos
 
 		# 2: Reclassify Points, P(p | H1), P(p | H2) then relabel points
             # Compare 2 histograms and see which color seems like it should belong to
