@@ -5,13 +5,13 @@ The goal of this project is to take a bare-bones mobile robot running ROS and pr
 
 P(Individual | Data) =  a * P(Individual | Clothing) + b * P(Individual | Body Type)
 
-P(Individual | Clothing):
+#### P(Individual | Clothing):
 
 &nbsp;&nbsp;&nbsp;&nbsp; Steps: (1 - 3 are E&M in Color Space)
 
 &nbsp;&nbsp;&nbsp;&nbsp; 1. Generate a random horizontal line (theta), classify points below and above it.
 
-&nbsp;&nbsp;&nbsp;&nbsp; 2. Build color histograms, Histogram1 (H1) is above the theta line, and Histogram 2 (H2) is below.  One histogram will likely contain data that isn’t like the rest of its data and is more like the other histograms data, so the line must be moved.
+&nbsp;&nbsp;&nbsp;&nbsp; 2. Build color histograms, Histogram1 (H1) is above the theta line, and Histogram 2 (H2) is below.  One histogram will &nbsp;&nbsp;&nbsp;&nbsp; likely contain data that isn’t like the rest of its data and is more like the other histograms data, so the line must be moved.
 
 &nbsp;&nbsp;&nbsp;&nbsp; 3. Reclassify Points, P(p | H1), P(p | H2) then relabel points
 
@@ -20,7 +20,7 @@ P(Individual | Clothing):
 
 
 
-P(Individual | Body Type):
+#### P(Individual | Body Type):
 
  1. Anthropometric Distances for shape-based biometric human identification-Create a skeleton
  of points and distance vectors between body parts using input images of each person. Create point vectors that clearly show visible inter-joint distances and the euclidean distance should be invariant of most poses.
