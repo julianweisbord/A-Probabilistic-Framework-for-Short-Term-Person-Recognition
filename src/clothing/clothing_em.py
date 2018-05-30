@@ -9,11 +9,13 @@ import sys
 import random
 import glob
 import numpy as np
+from sys import maxint
 import cv2
 from matplotlib import pyplot as plt
 
 IMG_WIDTH = 299
 IMG_HEIGHT = 299
+# MAX_ITERATIONS =
 VERBOSITY = 2
 
 class ClothingEM():
@@ -77,8 +79,8 @@ class ClothingEM():
         lower_plot = plt.subplot(222)
         lower_plot.set_title("Below Theta Line")
         if VERBOSITY >=2:
-            upper_plot.imshow(upper_masked_img_cropped)
-            lower_plot.imshow(lower_masked_img_cropped)
+            upper_plot.imshow(cv2.cvtColor(upper_masked_img_cropped, cv2.COLOR_RGB2BGR))
+            lower_plot.imshow(cv2.cvtColor(lower_masked_img_cropped, cv2.COLOR_RGB2BGR))
 
         colors = ("b", "g", "r")
         features_h1 = []
@@ -100,11 +102,11 @@ class ClothingEM():
         print("Flattened feature vector", np.array(features_h1).flatten().shape)
         return h1, h2
 
-    def kmeans(self):
+    def kmeans(self, data, k=2):
         '''
         K-means on physical space
         '''
-        pass
+
         # Take set of points as input x1, ... ,xn
         # Randomly place k centroids
         # for each point xi:
@@ -114,16 +116,128 @@ class ClothingEM():
         # for each cluster:
         #   new cluster = position of mean of all points assigned to previous cluster
 
-    def expectation(h1, h2):
+        # For our example
+        # Take in k=2 histograms and extract the pixel locations
+        # Randomly place centroids
+        # while not converged:
+            # For each point compute distance to each of the centroids
+            # The point will be assigned to the closest centroid
+            # Next compute mean position for each cluster and move cluster centroid to that position
+        # Is kmeans just used to tell you where the center of 2 centroids should be, allowing us
+        # to determine where theta should be and by how much we should move theta at this step?
+        # Generate K centroids
+        print("K = ", k)
+        C, c_positions = gen_centroids(data, k)
+        prev_c = 0
+        iterations = 0
+        SSEs = []
+        while not converged(C, prev_c, iterations):
+            iterations += 1
+            prev_c = C
+            labels = label_data(data, C)
+            C = gen_new_clusters(data, C, labels, k)
+            SSE = calc_sse(data, labels, k, C)
+            SSEs.append(SSE)
+            print("SSE: ", SSE)
+        return SSEs, labels, C, iterations
+
+    def converged(self, C, prev_c, iterations):
+        '''
+        Check if the difference between the previous centroid and the new centroid has
+            changed by more than MARGINAL_DIFFERENCE or if MAX_ITERATIONS is reachead.
+        '''
+        if not prev_c:
+            return False
+        if iterations >= MAX_ITERATIONS:
+            return True
+        if np.array_equal(C, prev_c):
+            print("No change in iteration!")
+            return True
+
+    def gen_new_clusters(self, data, C, labels, k):
+
+        sums = []
+        mean_centroids = []
+
+        for centroid in C:
+            sums.append([np.zeros(data.shape[1]).flatten(), 0])
+
+        for i, label in enumerate(labels):
+            sums[label][0] = np.add(sums[label][0], data[i])
+            sums[label][1] += 1
+
+        for i, row in enumerate(sums):
+            mean_centroids.append(np.divide(row[0], row[1]))
+
+        return mean_centroids
+
+    def calc_sse(self, data, labels, k, centroids):
+        '''
+        description: Sum of distance between each row and the centroid of its labeled cluster squared.
+        input: data <list of lists> the dataset, labels <list of ints> are a series of values
+                   which corresponds to each row in data, k <int> number of centroids,
+                   centroids <list of k centroid lists> the current centroid sample.
+        return: sse <list> Sum of squared error for each iteration of kmeans.
+        '''
+        se = []
+
+        for pos, digit_row in enumerate(data):
+            k_centroid_err = []
+            for _ in range(k):
+
+                centroid_pos = labels[pos]
+                difference = [np.subtract(x1, x2) for (x1, x2) in zip(digit_row, centroids[centroid_pos])]
+                k_centroid_err.append(np.linalg.norm(difference) **2)
+            se.append(min(k_centroid_err))
+        sse = np.sum(se)
+        return sse
+
+    def distance(self, point, center, axis=1):
+        return np.linalg.norm(point - center, axis=axis)
+
+    def gen_centroids(self, data, k):
+        centroid_positions = []
+        centroids = []
+        for _ in range(k):
+            c_pos = np.random.randint(0, len(data))
+            centroid_positions.append(c_pos)
+            centroids.append(data[c_pos])
+            # print("len centroids: ", len(centroids))
+            # print("centroid_positions", centroids)
+            print("Centroids: ", centroid_positions)
+
+        return centroids, centroid_positions
+
+    def label_data(self, data, C):
+        '''
+        For each row in the data, calculate the distance between that
+            row and the each centroid.
+        input: data <numpy array>, C <list of k numpy arrays>
+        return: labels <list> of each centroid number corresponding to
+                each row in the data.
+        '''
+        labels = []
+        for n, row in enumerate(data):
+            best_dist = maxint
+            best_c_k = 0
+            for c_k, centroid in enumerate(C):
+                row_dist = distance(row, centroid)
+                if row_dist < best_dist:
+                    best_dist = row_dist
+                    best_c_k = c_k
+            labels.append(best_c_k)
+        return labels
+
+    def expectation(self, h1, h2):
         # Expectation:
         p_point_h1 = []
         p_point_h2 = []
-        for each point in h1:
+        for point in h1:
             norm1 = freq_h1 + freq_h2
             norm2 = freq_h1 + freq_h2
             p_point = freq_h1 / (norm1)
             p_point_h1.append(p_point)
-        for each point in h2:
+        for point in h2:
             p_point = freq_h2 / (norm2)
             p_point_h2.append(p_point)
 

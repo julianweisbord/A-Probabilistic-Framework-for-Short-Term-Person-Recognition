@@ -7,7 +7,7 @@ The goal of this project is to take a bare-bones mobile robot running ROS and pr
 
 #### P(Individual | Clothing):
 
-&nbsp;&nbsp;&nbsp;&nbsp; Steps: (1 - 3 are E&M in Color Space)
+&nbsp;&nbsp;&nbsp; Steps: (1 - 3 are E&M in Color Space)
 
 1. Generate a random horizontal line (theta), classify points below and above it.
 
