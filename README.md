@@ -7,7 +7,7 @@ The goal of this project is to take a bare-bones mobile robot running ROS and pr
 
 #### P(Individual | Clothing):
 
-&nbsp;&nbsp;&nbsp; Steps: (1 - 3 are E&M in Color Space)
+&nbsp;&nbsp;&nbsp; Steps: (E&M in Color Space)
 
 1. Generate a random horizontal line (theta), classify points below and above it.
 
@@ -15,9 +15,7 @@ The goal of this project is to take a bare-bones mobile robot running ROS and pr
 
 3. Reclassify Points, P(p | H1), P(p | H2) then relabel points
 
-4. (Physical Space) K-Means step on theta line, mean of the 2 distributions to converge to middle points (probably knees and ribs)
-
-5. repeat steps 2 to 4 until convergence
+4. repeat steps 2 and 3 until convergence.
 
 
 

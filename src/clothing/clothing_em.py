@@ -39,20 +39,19 @@ class ClothingEM():
 
     def crop_to_person(self):
         # Simulate this function for now with constant values
-        x1 = 89
-        x2 = 198
-        y1 = 0
-        y2 = 284
+        x1 = 100
+        x2 = 192
+        y1 = 16
+        y2 = 272
         return x1, x2, y1, y2
 
-    def create_histograms(self, img, line_height):
+    def create_histograms(self, img, line_height, x1, x2, y1, y2):
         if VERBOSITY >=2:
             l = cv2.imshow('Random Line Splitting Clothing', img)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
             print("img shape: ", img.shape)
-        # Crop image so that only the person is in the image:
-        x1, x2, y1, y2 = self.crop_to_person()
+
 
         mask_upper_cropped = np.zeros(img.shape[:2], np.uint8)
         mask_upper_cropped[y1:line_height, x1:x2] = 255
@@ -102,75 +101,6 @@ class ClothingEM():
         print("Flattened feature vector", np.array(features_h1).flatten().shape)
         return h1, h2
 
-    def kmeans(self, data, k=2):
-        '''
-        K-means on physical space
-        '''
-
-        # Take set of points as input x1, ... ,xn
-        # Randomly place k centroids
-        # for each point xi:
-        #   find nearest centroid cj and assign point xi to cj
-        #   The cluster centroid will be generated randomly at a point above or below the
-        #   line where the peak values are.
-        # for each cluster:
-        #   new cluster = position of mean of all points assigned to previous cluster
-
-        # For our example
-        # Take in k=2 histograms and extract the pixel locations
-        # Randomly place centroids
-        # while not converged:
-            # For each point compute distance to each of the centroids
-            # The point will be assigned to the closest centroid
-            # Next compute mean position for each cluster and move cluster centroid to that position
-        # Is kmeans just used to tell you where the center of 2 centroids should be, allowing us
-        # to determine where theta should be and by how much we should move theta at this step?
-        # Generate K centroids
-        print("K = ", k)
-        C, c_positions = gen_centroids(data, k)
-        prev_c = 0
-        iterations = 0
-        SSEs = []
-        while not converged(C, prev_c, iterations):
-            iterations += 1
-            prev_c = C
-            labels = label_data(data, C)
-            C = gen_new_clusters(data, C, labels, k)
-            SSE = calc_sse(data, labels, k, C)
-            SSEs.append(SSE)
-            print("SSE: ", SSE)
-        return SSEs, labels, C, iterations
-
-    def converged(self, C, prev_c, iterations):
-        '''
-        Check if the difference between the previous centroid and the new centroid has
-            changed by more than MARGINAL_DIFFERENCE or if MAX_ITERATIONS is reachead.
-        '''
-        if not prev_c:
-            return False
-        if iterations >= MAX_ITERATIONS:
-            return True
-        if np.array_equal(C, prev_c):
-            print("No change in iteration!")
-            return True
-
-    def gen_new_clusters(self, data, C, labels, k):
-
-        sums = []
-        mean_centroids = []
-
-        for centroid in C:
-            sums.append([np.zeros(data.shape[1]).flatten(), 0])
-
-        for i, label in enumerate(labels):
-            sums[label][0] = np.add(sums[label][0], data[i])
-            sums[label][1] += 1
-
-        for i, row in enumerate(sums):
-            mean_centroids.append(np.divide(row[0], row[1]))
-
-        return mean_centroids
-
     def calc_sse(self, data, labels, k, centroids):
         '''
         description: Sum of distance between each row and the centroid of its labeled cluster squared.
@@ -195,23 +125,10 @@ class ClothingEM():
     def distance(self, point, center, axis=1):
         return np.linalg.norm(point - center, axis=axis)
 
-    def gen_centroids(self, data, k):
-        centroid_positions = []
-        centroids = []
-        for _ in range(k):
-            c_pos = np.random.randint(0, len(data))
-            centroid_positions.append(c_pos)
-            centroids.append(data[c_pos])
-            # print("len centroids: ", len(centroids))
-            # print("centroid_positions", centroids)
-            print("Centroids: ", centroid_positions)
-
-        return centroids, centroid_positions
-
     def label_data(self, data, C):
         '''
         For each row in the data, calculate the distance between that
-            row and the each centroid.
+            row and each centroid.
         input: data <numpy array>, C <list of k numpy arrays>
         return: labels <list> of each centroid number corresponding to
                 each row in the data.
@@ -228,22 +145,27 @@ class ClothingEM():
             labels.append(best_c_k)
         return labels
 
-    def expectation(self, h1, h2):
+    # def expectation(self, h1, h2):
         # Expectation:
-        p_point_h1 = []
-        p_point_h2 = []
-        for point in h1:
-            norm1 = freq_h1 + freq_h2
-            norm2 = freq_h1 + freq_h2
-            p_point = freq_h1 / (norm1)
-            p_point_h1.append(p_point)
-        for point in h2:
-            p_point = freq_h2 / (norm2)
-            p_point_h2.append(p_point)
+        # Calculate mu (mean r,g,b centroid) and sigma (covariance matrix) for each cluster
+        #
+        # p_point_h1 = []
+        # p_point_h2 = []
+        # for point in h1:
+        #     norm1 = freq_h1 + freq_h2
+        #     norm2 = freq_h1 + freq_h2
+        #     p_point = freq_h1 / (norm1)
+        #     p_point_h1.append(p_point)
+        # for point in h2:
+        #     p_point = freq_h2 / (norm2)
+        #     p_point_h2.append(p_point)
+
 
     def color_em(self, img):
         # 0: Generate a random horizontal line (theta), classify points below and above it.
-        rand_y = random.randint(1, IMG_HEIGHT + 1)
+        # Crop image so that only the person is in the image:
+        x1, x2, y1, y2 = self.crop_to_person()
+        rand_y = random.randint(y1, y2 + 1)
 
         random_line_img = cv2.line(img, (0, rand_y), (IMG_WIDTH, rand_y), (0, 0, 250), 4)
 
@@ -251,6 +173,11 @@ class ClothingEM():
         random_line_img_out = np.multiply(random_line_img, 255.0)
         random_line_img_out = random_line_img_out.astype('uint8')
         cv2.imwrite('../../data_capture/manipulated_images/line.jpeg', random_line_img_out)
+
+        cropped_img = img[y1:y2, x1:x2]
+        cropped_img = np.multiply(cropped_img, 255.0)
+        cropped_img = cropped_img.astype('uint8')
+        cv2.imwrite('../../data_capture/manipulated_images/cropped_line.jpg', cropped_img)
 
         # 1: Build color histograms, Histogram1 (H1) is above the theta line,
             # and Histogram 2 (H2) is below. One histogram will likely contain data that
@@ -260,7 +187,7 @@ class ClothingEM():
         prior_line_pos = 0
         n = 10 # Arbitrary pixel value for now.
         while(abs(line_pos - prior_line_pos) > 0):
-            h1, h2 = self.create_histograms(img, rand_y)
+            h1, h2 = self.create_histograms(img, rand_y, x1, x2, y1, y2)
             # Expectation
             p_point_h1, p_point_h2 = expectation(h1, h2)
             # Maximization:
@@ -335,7 +262,7 @@ def main():
     # from load_data import LoadData
     # dataset = LoadData('../data_capture/individuals/', (299,299))
     # Testing:
-    img = "../../data_capture/individuals/julian.jpeg"
+    img = "../../data_capture/individuals/julian.jpg"
     image = cv2.imread(img)
     image = cv2.resize(image, (299, 299), 0, 0, cv2.INTER_LINEAR)
     image = image.astype(np.float32)
