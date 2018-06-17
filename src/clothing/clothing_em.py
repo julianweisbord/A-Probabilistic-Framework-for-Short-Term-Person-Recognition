@@ -2,7 +2,9 @@
 Created on March 8th, 2018
 author: Julian Weisbord
 sources: https://docs.opencv.org/3.1.0/d1/db7/tutorial_py_histogram_begins.html
-description:
+description: Clothing prediction portion of the model, calculates the likelihood
+                that the live data contains someone from the database of people
+                by breaking the feed images into color histograms.
 '''
 
 import sys
@@ -15,10 +17,14 @@ from matplotlib import pyplot as plt
 
 IMG_WIDTH = 299
 IMG_HEIGHT = 299
-# MAX_ITERATIONS =
 VERBOSITY = 2
 
 class ClothingEM():
+    '''
+    description: Uses E&M to cluster the clothing of people seen by the robot.
+    input: frame_dataset <Dataset object> the input dataset,
+               video <boolean> whether or not the input is video or photo data.
+    '''
 
     def __init__(self, frame_dataset=None, video=False):
         self.images = frame_dataset[0]
@@ -29,6 +35,10 @@ class ClothingEM():
             # Convert video to a series of frames
 
     def add_frames(self, dataset):
+        '''
+        description: Add a dataset of camera frames.
+        input: dataset <Dataset object>
+        '''
         frames = []
         names = []
         locations = []
@@ -38,7 +48,12 @@ class ClothingEM():
             self.person_locations.append(dataset[0])
 
     def crop_to_person(self):
+        '''
+        description: Crop a given data frame to isolate just the person in it.
+        return: x1,x2,y1,y2 <int> the four corners of the cropped image.
+        '''
         # Simulate this function for now with constant values
+        # TODO: Implement this with grabcut Algorithm?
         x1 = 100
         x2 = 192
         y1 = 16
@@ -46,30 +61,27 @@ class ClothingEM():
         return x1, x2, y1, y2
 
     def create_histograms(self, img, line_height, x1, x2, y1, y2):
+        '''
+        description: Create a color histogram above and below the random line (line_height).
+        input: img <numpy.ndarray>, line_height <int> height of randomly generated line,
+                       x1, x2, y1, y2 <int> 4 corners of input image.
+        return:
+        '''
+
         if VERBOSITY >=2:
             l = cv2.imshow('Random Line Splitting Clothing', img)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
             print("img shape: ", img.shape)
 
-
+        # Split image into upper and lower masks
         mask_upper_cropped = np.zeros(img.shape[:2], np.uint8)
         mask_upper_cropped[y1:line_height, x1:x2] = 255
         upper_masked_img_cropped = cv2.bitwise_and(img, img, mask=mask_upper_cropped)
 
-        # mask_upper = np.zeros(img.shape[:2], np.uint8)
-        # # mask_upper[<height>, <width>]
-        # mask_upper[line_height:img.shape[1], 0:img.shape[0]] = 255
-        # upper_masked_img = cv2.bitwise_and(img, img, mask=mask_upper)
-
-        # mask_lower = np.zeros(img.shape[:2], np.uint8)
-        # mask_lower[0:line_height, 0:img.shape[1]] = 255
-        # lower_masked_img = cv2.bitwise_and(img, img, mask = mask_lower)
-
         mask_lower_cropped = np.zeros(img.shape[:2], np.uint8)
         mask_lower_cropped[line_height:y2, x1:x2] = 255
         lower_masked_img_cropped = cv2.bitwise_and(img, img, mask=mask_lower_cropped)
-
 
         # Create upper and lower histograms and plot them
         plt.figure("Color Histograms")
@@ -80,13 +92,17 @@ class ClothingEM():
         if VERBOSITY >=2:
             upper_plot.imshow(cv2.cvtColor(upper_masked_img_cropped, cv2.COLOR_RGB2BGR))
             lower_plot.imshow(cv2.cvtColor(lower_masked_img_cropped, cv2.COLOR_RGB2BGR))
-
+        # Create and polot histograms for r,g,b collor values.
         colors = ("b", "g", "r")
         features_h1 = []
         features_h2 = []
+        h1_colors = []
+        h2_colors = []
         for i,col in enumerate(colors):
             h1 = cv2.calcHist([img], [i], mask_upper_cropped, [256], [0, 1])
+            h1_colors.append([arr[0] for arr in h1])
             h2 = cv2.calcHist([img], [i], mask_lower_cropped, [256], [0, 1])
+            h2_colors.append([arr[0] for arr in h2])
             features_h1.extend(h1)
             features_h2.extend(h2)
             h1_plot = plt.subplot(223)
@@ -99,36 +115,25 @@ class ClothingEM():
             plt.xlim([0, 256])
         plt.show()
         print("Flattened feature vector", np.array(features_h1).flatten().shape)
-        return h1, h2
+        h1_rgb = []
+        h2_rgb = []
+        for i in range(len(h1)):
+            h1_rgb.append([single_color_vector[i] for single_color_vector in h1_colors])
+            h2_rgb.append([single_color_vector[i] for single_color_vector in h2_colors])
+        print("h1_rgb: ", h1_rgb)
+        print("len h1_rgb: ", len(h1_rgb))
+        h1_rgb = np.array(h1_rgb)
+        h2_rgb = np.array(h2_rgb)
+        return h1_rgb, h2_rgb
 
-    def calc_sse(self, data, labels, k, centroids):
-        '''
-        description: Sum of distance between each row and the centroid of its labeled cluster squared.
-        input: data <list of lists> the dataset, labels <list of ints> are a series of values
-                   which corresponds to each row in data, k <int> number of centroids,
-                   centroids <list of k centroid lists> the current centroid sample.
-        return: sse <list> Sum of squared error for each iteration of kmeans.
-        '''
-        se = []
-
-        for pos, digit_row in enumerate(data):
-            k_centroid_err = []
-            for _ in range(k):
-
-                centroid_pos = labels[pos]
-                difference = [np.subtract(x1, x2) for (x1, x2) in zip(digit_row, centroids[centroid_pos])]
-                k_centroid_err.append(np.linalg.norm(difference) **2)
-            se.append(min(k_centroid_err))
-        sse = np.sum(se)
-        return sse
 
     def distance(self, point, center, axis=1):
-        return np.linalg.norm(point - center, axis=axis)
+        pass
 
     def label_data(self, data, C):
         '''
-        For each row in the data, calculate the distance between that
-            row and each centroid.
+        description: For each row in the data, calculate the distance between that
+                        row and each centroid.
         input: data <numpy array>, C <list of k numpy arrays>
         return: labels <list> of each centroid number corresponding to
                 each row in the data.
@@ -145,24 +150,30 @@ class ClothingEM():
             labels.append(best_c_k)
         return labels
 
-    # def expectation(self, h1, h2):
-        # Expectation:
+    def expectation(self, h1_rgb, h2_rgb):
+        '''
+        description: Assign points to clusters and calculate mean.
+        input: h1_rgb <numpy array> top color histogram, h2_rgb <numpy array> bottom color histogram.
+        return mean rgb clusters
+        '''
         # Calculate mu (mean r,g,b centroid) and sigma (covariance matrix) for each cluster
-        #
-        # p_point_h1 = []
-        # p_point_h2 = []
-        # for point in h1:
-        #     norm1 = freq_h1 + freq_h2
-        #     norm2 = freq_h1 + freq_h2
-        #     p_point = freq_h1 / (norm1)
-        #     p_point_h1.append(p_point)
-        # for point in h2:
-        #     p_point = freq_h2 / (norm2)
-        #     p_point_h2.append(p_point)
-
+        mean_h1 = np.mean(h1_rgb, axis = 0)
+        mean_h2 = np.mean(h2_rgb, axis = 0)
+        print("mean 1", mean_h1)
+        print("mean 2", mean_h2)
+        covariance_h1 = np.cov(h1_rgb)
+        covariance_h2 = np.cov(h2_rgb)
+        print("covariance h1", covariance_h1)
+        print("covariance h2", covariance_h2)
+        print("len covariance h1", len(covariance_h1))
+        return [(mean_h1, covariance_h1), (mean_h2, covariance_h2)]
 
     def color_em(self, img):
-        # 0: Generate a random horizontal line (theta), classify points below and above it.
+        '''
+        description: Performs Expecation Maximization with 2 clusters
+                        on the input image.
+        input: img <numpy array> the image fed to this classifier.
+        '''
         # Crop image so that only the person is in the image:
         x1, x2, y1, y2 = self.crop_to_person()
         rand_y = random.randint(y1, y2 + 1)
@@ -185,83 +196,18 @@ class ClothingEM():
             # so the line must be moved
         line_pos = rand_y
         prior_line_pos = 0
-        n = 10 # Arbitrary pixel value for now.
-        while(abs(line_pos - prior_line_pos) > 0):
-            h1, h2 = self.create_histograms(img, rand_y, x1, x2, y1, y2)
-            # Expectation
-            p_point_h1, p_point_h2 = expectation(h1, h2)
-            # Maximization:
-            # avg_point_h shape is: (point_position, frequency, probability)
-            avg_point_h1 = mean(p_point_h1)  # points with the average color value
-            avg_point_h2 = mean(p_point_h2)
+        # Need to loop
 
-            # Ieratively try to increase or decrease line height to make
-                # sure that the new frequency value for the average point
-                # is greater than the prior
+        h1_rgb, h2_rgb = self.create_histograms(img, rand_y, x1, x2, y1, y2)
+        self.expectation(h1_rgb, h2_rgb)
 
-            new_avg_color_h1 = 0
-            new_avg_color_h2 = 0
-            count = 0
-            go_down = False
 
-            while(avg_color_h1 > new_avg_color_h1 and avg_color_h2 > new_avg_color_h2):
-                if go_down == True:
-                    line_pos -= n * avg_point_h1_probability
-                else:
-                    # Move line upwards
-                    line_pos += n * avg_point_h1_probability
-                p_point_h1, p_point_h2 = expectation(h1, h2)
-                new_avg_color_h1 = mean(p_point_h1)
-                new_avg_color_h2 = mean(p_point_h2)
-                if(avg_color_h1 > new_avg_color_h1 and avg_color_h2 > new_avg_color_h2):
-                    # line_pos -= n  # If up was the wrong direction
-                    go_down = True
-                # n /= 2
-                # avg_color_h1 = new_avg_color_h1
-                # avg_color_h2 = new_avg_color_h2
-                count += 1
-            prior_line_pos = line_pos
-
-		# 2: Reclassify Points, P(p | H1), P(p | H2) then relabel points
-            # Compare 2 histograms and see which color seems like it should belong to
-            # the other histogram. Take largest color value of the bigger histogram
-            # and see if it matches a color on the smaller histogram. If it does,
-            # then the line should be moved until that color is minimized.
-
-        # Calculate which histogram is for the smaller image
-        # if (img.shape[1] - random_line_img) > (img.shape[1] / 2.0):
-        #     smaller_img_hist = h1
-        # else:
-        #     smaller_img_hist = h2
-        # plt.plot(smaller_img_hist)
-        # print(smaller_img_hist)
-        # Algorithm:
-        # Grab a tuple max_tuple <(x, bin, [R,G,B])> where x is the max number of pixels
-        # from the smaller image.
-        # past_tuple = None
-        # While (smaller_img_h_x_value is greater than zero and is still decreasing):
-
-            # still decreasing means past_x > current_x
-
-            # if line is closer to bottom of image:
-                # Move line up a few pxels
-            # if line is closer to top of image:
-                # Move line down a few pxels
-            # Recalculate histograms h1 and h2 and recalculate # of pixels x for
-            # smaller image
-            # print(new_smaller_img_h_x_value)
-            # past_x = new_smaller_img_h_x_value
     def clothing_distribution(self):
         converged = None
         while not converged:
             self.color_em()
-		# 3: (Physical Space) K-Means step on theta line, mean of the 2 distributions to
-        self.kmeans()
 
 def main():
-    # from load_data import LoadData
-    # dataset = LoadData('../data_capture/individuals/', (299,299))
-    # Testing:
     img = "../../data_capture/individuals/julian.jpg"
     image = cv2.imread(img)
     image = cv2.resize(image, (299, 299), 0, 0, cv2.INTER_LINEAR)

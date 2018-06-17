@@ -11,7 +11,7 @@ The goal of this project is to take a bare-bones mobile robot running ROS and pr
 
 1. Generate a random horizontal line (theta), classify points below and above it.
 
-2. Build color histograms, Histogram1 (H1) is above the theta line, and Histogram 2 (H2) is below. One histogram will likely contain data that isn’t like the rest of its data and is more like the other histograms data, so the line must be moved.
+2. Build color histogram clusters, Histogram1 (H1) is above the theta line, and Histogram 2 (H2) is below. One histogram will likely contain data that isn’t like the rest of its data and is more like the other histograms data, so the line must be moved.
 
 3. Reclassify Points, P(p | H1), P(p | H2) then relabel points
 
